@@ -1,1 +1,618 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📦 Inventory Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 1rem;
+        }
+
+        .last-updated {
+            color: #00d4ff;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .summary-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+
+        .summary-card .label {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .summary-card.warning .value {
+            color: #ffaa00;
+        }
+
+        .summary-card.danger .value {
+            color: #ff4757;
+        }
+
+        .summary-card.success .value {
+            color: #00ff88;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box:focus {
+            border-color: #00d4ff;
+        }
+
+        .search-box::placeholder {
+            color: #666;
+        }
+
+        .filter-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+
+        .refresh-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            color: #1a1a2e;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Table */
+        .table-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 18px 20px;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(0, 212, 255, 0.2);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        th:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        th .sort-icon {
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+
+        tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .code-badge {
+            background: rgba(0, 212, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .price {
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        .quantity {
+            font-weight: 600;
+        }
+
+        .quantity.low {
+            color: #ffaa00;
+        }
+
+        .quantity.out {
+            color: #ff4757;
+        }
+
+        .quantity.good {
+            color: #00ff88;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-badge.in-stock {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .status-badge.low-stock {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+        }
+
+        .status-badge.out-of-stock {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+        }
+
+        /* Loading & Error States */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+
+        .loading .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #ff4757;
+        }
+
+        .error-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            th, td {
+                padding: 12px 10px;
+                font-size: 0.85rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>📦 Inventory Dashboard</h1>
+            <p>Real-time inventory monitoring system</p>
+            <div class="last-updated" id="lastUpdated">Last updated: Loading...</div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="icon">📦</div>
+                <div class="value" id="totalItems">-</div>
+                <div class="label">Total Products</div>
+            </div>
+            <div class="summary-card success">
+                <div class="icon">📊</div>
+                <div class="value" id="totalQuantity">-</div>
+                <div class="label">Total Quantity</div>
+            </div>
+            <div class="summary-card">
+                <div class="icon">💰</div>
+                <div class="value" id="totalValue">-</div>
+                <div class="label">Total Value</div>
+            </div>
+            <div class="summary-card warning">
+                <div class="icon">⚠️</div>
+                <div class="value" id="lowStock">-</div>
+                <div class="label">Low Stock Items</div>
+            </div>
+            <div class="summary-card danger">
+                <div class="icon">🚫</div>
+                <div class="value" id="outOfStock">-</div>
+                <div class="label">Out of Stock</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search by code or item name...">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="in-stock">In Stock</button>
+            <button class="filter-btn" data-filter="low-stock">Low Stock</button>
+            <button class="filter-btn" data-filter="out-of-stock">Out of Stock</button>
+            <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-sort="code">Code <span class="sort-icon">↕</span></th>
+                        <th data-sort="item">Item <span class="sort-icon">↕</span></th>
+                        <th data-sort="price">Price <span class="sort-icon">↕</span></th>
+                        <th data-sort="quantity">Quantity <span class="sort-icon">↕</span></th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryTable">
+                    <tr>
+                        <td colspan="5">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading inventory data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>🏪 Kiosk POS Inventory System | Powered by n8n</p>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ IMPORTANT: Replace this URL with your n8n webhook URL
+        const WEBHOOK_URL = 'https://n8n.3alwhats.shop/webhook/inventory';
+
+        let inventoryData = [];
+        let currentFilter = 'all';
+        let currentSort = { column: null, direction: 'asc' };
+
+        // Fetch inventory data from n8n
+        async function fetchInventory() {
+            const tableBody = document.getElementById('inventoryTable');
+            
+            try {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading inventory data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                const response = await fetch(WEBHOOK_URL);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch inventory');
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    inventoryData = data.inventory;
+                    updateSummary(data.summary);
+                    updateLastUpdated(data.timestamp);
+                    renderTable();
+                } else {
+                    throw new Error('Invalid response from server');
+                }
+
+            } catch (error) {
+                console.error('Error fetching inventory:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="error">
+                                <div class="error-icon">❌</div>
+                                <p>Failed to load inventory data</p>
+                                <p style="font-size: 0.8rem; margin-top: 10px;">
+                                    Please check your webhook URL and try again
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Update summary cards
+        function updateSummary(summary) {
+            document.getElementById('totalItems').textContent = summary.totalItems;
+            document.getElementById('totalQuantity').textContent = summary.totalQuantity.toLocaleString();
+            document.getElementById('totalValue').textContent = '$' + summary.totalValue.toLocaleString();
+            document.getElementById('lowStock').textContent = summary.lowStockItems;
+            document.getElementById('outOfStock').textContent = summary.outOfStockItems;
+        }
+
+        // Update last updated timestamp
+        function updateLastUpdated(timestamp) {
+            const date = new Date(timestamp);
+            const formatted = date.toLocaleString();
+            document.getElementById('lastUpdated').textContent = `Last updated: ${formatted}`;
+        }
+
+        // Get item status
+        function getStatus(quantity) {
+            if (quantity === 0) return { class: 'out-of-stock', text: 'Out of Stock' };
+            if (quantity <= 10) return { class: 'low-stock', text: 'Low Stock' };
+            return { class: 'in-stock', text: 'In Stock' };
+        }
+
+        // Get quantity class
+        function getQuantityClass(quantity) {
+            if (quantity === 0) return 'out';
+            if (quantity <= 10) return 'low';
+            return 'good';
+        }
+
+        // Filter inventory
+        function filterInventory(data) {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            return data.filter(item => {
+                // Search filter
+                const matchesSearch = 
+                    item.code.toLowerCase().includes(searchTerm) ||
+                    item.item.toLowerCase().includes(searchTerm);
+
+                // Status filter
+                let matchesFilter = true;
+                if (currentFilter === 'in-stock') {
+                    matchesFilter = item.quantity > 10;
+                } else if (currentFilter === 'low-stock') {
+                    matchesFilter = item.quantity > 0 && item.quantity <= 10;
+                } else if (currentFilter === 'out-of-stock') {
+                    matchesFilter = item.quantity === 0;
+                }
+
+                return matchesSearch && matchesFilter;
+            });
+        }
+
+        // Sort inventory
+        function sortInventory(data) {
+            if (!currentSort.column) return data;
+
+            return [...data].sort((a, b) => {
+                let aVal = a[currentSort.column];
+                let bVal = b[currentSort.column];
+
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        // Render table
+        function renderTable() {
+            const tableBody = document.getElementById('inventoryTable');
+            let filteredData = filterInventory(inventoryData);
+            filteredData = sortInventory(filteredData);
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5">
+                            <div class="no-results">
+                                <p>🔍 No items found matching your criteria</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = filteredData.map(item => {
+                const status = getStatus(item.quantity);
+                const qtyClass = getQuantityClass(item.quantity);
+
+                return `
+                    <tr>
+                        <td><span class="code-badge">${item.code}</span></td>
+                        <td>${item.item}</td>
+                        <td class="price">$${item.price.toFixed(2)}</td>
+                        <td class="quantity ${qtyClass}">${item.quantity}</td>
+                        <td><span class="status-badge ${status.class}">${status.text}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Event Listeners
+        document.getElementById('searchBox').addEventListener('input', renderTable);
+
+        document.getElementById('refreshBtn').addEventListener('click', fetchInventory);
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderTable();
+            });
+        });
+
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.sort;
+                if (currentSort.column === column) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = column;
+                    currentSort.direction = 'asc';
+                }
+                renderTable();
+            });
+        });
+
+        // Auto-refresh every 30 seconds
+        setInterval(fetchInventory, 30000);
+
+        // Initial load
+        fetchInventory();
+    </script>
+</body>
+</html>
